@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SWING MASTER AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060912;--surf:#0a0f1e;--card:#0d1428;--card2:#111930;
+  --border:#1a2444;--accent:#00d4ff;--accent2:#ff6b35;
+  --gold:#ffd700;--green:#00ff88;--red:#ff4455;
+  --text:#dde6f0;--muted:#5a6a8a;
+  --mono:'JetBrains Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+}
+html{height:100%;-webkit-text-size-adjust:100%}
+body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);
+  overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* ══ API KEY OVERLAY ══════════════════════════════ */
+#api-overlay{
+  position:fixed;inset:0;background:rgba(6,9,18,.97);
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;padding:20px;
+}
+#api-overlay.hide{display:none}
+.api-box{
+  background:var(--surf);border:1px solid var(--border);
+  border-radius:16px;padding:28px 24px;width:100%;max-width:420px;
+}
+.api-box::before{content:'';display:block;width:100%;height:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2),var(--gold));
+  border-radius:2px;margin-bottom:24px}
+.api-title{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);
+  letter-spacing:1px;margin-bottom:6px}
+.api-sub{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.7}
+.api-sub a{color:var(--accent);text-decoration:none}
+.api-sub strong{color:var(--text)}
+.api-steps{background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:14px;margin-bottom:18px}
+.api-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:12px;line-height:1.6}
+.api-step:last-child{margin-bottom:0}
+.step-n{background:var(--accent);color:#000;width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:900;flex-shrink:0;font-family:var(--mono);margin-top:1px}
+.step-t{color:var(--text)}
+.step-t span{color:var(--accent);font-family:var(--mono);font-size:11px}
+.api-inp-wrap{position:relative;margin-bottom:14px}
+.api-inp{width:100%;background:var(--card);border:1px solid var(--border);
+  color:var(--text);padding:11px 44px 11px 13px;border-radius:9px;
+  font-family:var(--mono);font-size:12px;outline:none;
+  transition:border-color .2s;letter-spacing:.5px}
+.api-inp:focus{border-color:var(--accent)}
+.api-inp::placeholder{color:var(--muted);letter-spacing:0;font-size:11px}
+.api-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px}
+.api-save{width:100%;background:linear-gradient(135deg,var(--accent),#0099cc);
+  border:none;color:#000;padding:12px;border-radius:9px;
+  font-weight:900;font-family:var(--mono);font-size:13px;
+  cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.api-save:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,212,255,.4)}
+.api-save:active{transform:translateY(0)}
+.api-warn{font-size:10.5px;color:var(--muted);margin-top:12px;line-height:1.6;text-align:center}
+.api-warn strong{color:var(--warn)}
+
+/* ══ HEADER ════════════════════════════════════════ */
+#hdr{flex-shrink:0;height:50px;background:var(--surf);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;position:relative}
+#hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2),var(--gold),transparent)}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-ico{width:32px;height:32px;border-radius:7px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 0 14px rgba(0,212,255,.4)}
+.logo-t{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.5px}
+.logo-s{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:1.5px}
+.hright{display:flex;gap:6px;align-items:center}
+.badge{font-family:var(--mono);font-size:8.5px;font-weight:700;padding:3px 7px;border-radius:20px;letter-spacing:1px}
+.badge-live{background:rgba(0,255,136,.1);border:1px solid var(--green);color:var(--green);animation:blink 2s infinite}
+.badge-gs{background:rgba(255,215,0,.1);border:1px solid var(--gold);color:var(--gold)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.key-btn{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);
+  font-size:9px;font-family:var(--mono);padding:4px 8px;border-radius:6px;cursor:pointer;transition:all .2s}
+.key-btn:hover{background:rgba(0,212,255,.2)}
+
+/* ══ ROOT LAYOUT ═══════════════════════════════════ */
+#root{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* ══ SIDEBAR (desktop) ════════════════════════════ */
+#sb{width:232px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden}
+#sb-body{flex:1;overflow-y:auto;overflow-x:hidden}
+#sb-body::-webkit-scrollbar{width:2px}
+#sb-body::-webkit-scrollbar-thumb{background:var(--border)}
+.ss{padding:10px 11px;border-bottom:1px solid var(--border)}
+.st{font-family:var(--mono);font-size:8px;font-weight:700;color:var(--muted);
+  letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}
+.scan-row{display:flex;gap:4px;margin-bottom:5px}
+.tin{flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:6px 8px;border-radius:6px;font-family:var(--mono);font-size:12px;
+  font-weight:700;text-transform:uppercase;outline:none;transition:border-color .2s}
+.tin:focus{border-color:var(--accent)}
+.tin::placeholder{color:var(--muted);font-weight:400;font-size:9px}
+.gobtn{background:linear-gradient(135deg,var(--accent),#0099cc);border:none;color:#000;
+  padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:900;
+  font-family:var(--mono);font-size:10px;transition:all .2s}
+.gobtn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,212,255,.4)}
+.gobtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.mrow{display:flex;gap:3px}
+.mb{flex:1;padding:4px 2px;border-radius:4px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-size:8px;cursor:pointer;
+  font-family:var(--mono);transition:all .2s}
+.mb.on{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent)}
+.irow{display:flex;flex-wrap:wrap;gap:3px}
+.ib{padding:3px 6px;border-radius:4px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-size:8px;cursor:pointer;
+  font-family:var(--mono);transition:all .2s}
+.ib.on{background:rgba(255,107,53,.12);border-color:var(--accent2);color:var(--accent2)}
+.ct-row{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.ct-l{font-family:var(--mono);font-size:7.5px;color:var(--muted)}
+.ct-v{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--gold);flex:1}
+.ctbtn{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--gold);
+  font-size:7.5px;font-family:var(--mono);padding:3px 6px;border-radius:4px;cursor:pointer}
+.qb{display:block;width:100%;text-align:left;background:transparent;
+  border:1px solid var(--border);color:var(--text);padding:6px 9px;
+  border-radius:5px;cursor:pointer;font-size:10.5px;font-family:var(--sans);
+  transition:all .2s;margin-bottom:3px;line-height:1.4}
+.qb:hover:not(:disabled){background:rgba(0,212,255,.07);border-color:var(--accent);color:var(--accent)}
+.qb:disabled{opacity:.4;cursor:not-allowed}
+.pg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
+.pb{background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:5px 3px;border-radius:4px;cursor:pointer;font-family:var(--mono);
+  font-size:9px;font-weight:700;transition:all .2s;text-align:center}
+.pb:hover{background:rgba(0,212,255,.08);border-color:var(--accent);color:var(--accent)}
+
+/* ══ MAIN ═════════════════════════════════════════ */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0}
+#tabs{display:flex;background:var(--surf);border-bottom:1px solid var(--border);
+  flex-shrink:0;gap:2px;padding:0 10px}
+.tab{background:transparent;border:none;color:var(--muted);padding:10px 13px;
+  font-size:11.5px;font-family:var(--sans);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s;font-weight:500;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Chart */
+#chart-panel{flex:1;overflow:hidden;background:var(--bg);display:none;flex-direction:column;min-height:0}
+#chart-panel.show{display:flex}
+#tv-wrap{flex:1;overflow:hidden;min-height:0}
+
+/* Chat */
+#chat-panel{flex:1;display:none;flex-direction:column;overflow:hidden;min-height:0}
+#chat-panel.show{display:flex}
+#cbar{flex-shrink:0;padding:6px 12px;background:var(--surf);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+#cinfo{font-family:var(--mono);font-size:8px;color:var(--muted)}
+.clrbtn{background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:3px 8px;border-radius:5px;cursor:pointer;font-size:9.5px;transition:all .2s}
+.clrbtn:hover{color:var(--text);border-color:var(--accent)}
+
+#msgs{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px;min-height:0;
+  -webkit-overflow-scrolling:touch}
+#msgs::-webkit-scrollbar{width:2px}
+#msgs::-webkit-scrollbar-thumb{background:var(--border)}
+
+.empty{min-height:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:13px;text-align:center;padding:20px}
+.ei{font-size:34px}.et{font-size:15px;font-weight:900}
+.ed{font-size:11px;color:var(--muted);line-height:1.8;max-width:300px}
+.pills{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.pill{background:var(--card);border:1px solid var(--border);border-radius:20px;
+  padding:4px 10px;font-size:9px;color:var(--accent);font-family:var(--mono)}
+
+.msg{margin-bottom:11px;animation:fu .22s ease}
+@keyframes fu{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.mu{display:flex;justify-content:flex-end}
+.bu{background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,153,204,.06));
+  border:1px solid rgba(0,212,255,.2);border-radius:12px 12px 3px 12px;
+  padding:9px 12px;max-width:80%;font-size:12.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.ma{display:flex;gap:7px;align-items:flex-start}
+.av{width:27px;height:27px;border-radius:7px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+  box-shadow:0 0 8px rgba(0,212,255,.3)}
+.ba{background:var(--card);border:1px solid var(--border);
+  border-radius:3px 12px 12px 12px;padding:11px 13px;flex:1;min-width:0;
+  overflow-x:auto;font-size:12px;line-height:1.8;word-break:break-word}
+.ldots{display:flex;gap:3px;padding:11px 13px;background:var(--card);
+  border:1px solid var(--border);border-radius:3px 12px 12px 12px}
+.dot{width:5px;height:5px;background:var(--accent);border-radius:50%;animation:bn 1.3s infinite}
+.dot:nth-child(2){animation-delay:.18s}.dot:nth-child(3){animation-delay:.36s}
+@keyframes bn{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-6px);opacity:1}}
+
+/* Input */
+#ia{flex-shrink:0;padding:8px 11px;padding-bottom:max(8px,env(safe-area-inset-bottom));
+  background:var(--surf);border-top:1px solid var(--border)}
+#ir{display:flex;gap:6px;align-items:flex-end}
+#inp{flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:10px 12px;border-radius:10px;font-family:var(--sans);font-size:16px;
+  line-height:1.5;resize:none;outline:none;min-height:40px;max-height:90px;
+  transition:border-color .2s;-webkit-appearance:none}
+#inp:focus{border-color:var(--accent)}
+#inp::placeholder{color:var(--muted);font-size:13px}
+#sndbtn{width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),#0099cc);
+  border:none;color:#000;font-size:16px;font-weight:900;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;transition:all .2s}
+#sndbtn:active{transform:scale(.93)}
+#sndbtn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+#ih{font-family:var(--mono);font-size:7px;color:var(--muted);margin-top:4px;letter-spacing:.3px}
+
+/* Mobile quick bar */
+#qbar{flex-shrink:0;display:none;overflow-x:auto;padding:7px 10px;gap:6px;
+  background:var(--surf);border-top:1px solid var(--border);
+  -webkit-overflow-scrolling:touch}
+#qbar::-webkit-scrollbar{display:none}
+.qchip{flex-shrink:0;background:var(--card);border:1px solid var(--border);
+  color:var(--text);padding:6px 12px;border-radius:20px;cursor:pointer;
+  font-size:11.5px;font-family:var(--sans);white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;transition:all .2s}
+.qchip:active{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent)}
+.qchip.hot{background:rgba(0,212,255,.1);border-color:var(--accent);
+  color:var(--accent);font-family:var(--mono);font-weight:700}
+
+/* MD */
+.md h1{font-size:13.5px;font-weight:900;color:var(--accent);margin:11px 0 5px;
+  padding-bottom:4px;border-bottom:1px solid var(--border)}
+.md h2{font-size:12.5px;font-weight:700;color:var(--accent2);margin:9px 0 4px}
+.md h3{font-size:12px;font-weight:700;color:var(--gold);margin:8px 0 3px}
+.md h4{font-size:11.5px;font-weight:700;color:var(--green);margin:7px 0 3px}
+.md p{margin:4px 0;font-size:12px}
+.md hr{border:none;border-top:1px solid var(--border);margin:8px 0}
+.md blockquote{border-left:3px solid var(--accent);padding-left:8px;color:var(--muted);margin:4px 0;font-style:italic}
+.md code{font-family:var(--mono);font-size:10px;background:rgba(0,212,255,.1);
+  border:1px solid rgba(0,212,255,.15);padding:1px 4px;border-radius:3px;color:var(--accent)}
+.md pre{background:var(--surf);border:1px solid var(--border);border-radius:5px;padding:8px;margin:5px 0;overflow-x:auto}
+.md pre code{background:none;border:none;padding:0;color:var(--text);font-size:10px}
+.md ul{list-style:none;padding:0;margin:4px 0}
+.md ul li{padding:2px 0 2px 13px;position:relative;font-size:12px}
+.md ul li::before{content:'▸';position:absolute;left:0;color:var(--accent);font-size:7px;top:5px}
+.md ol{list-style:none;padding:0;margin:4px 0}
+.md ol li{padding:2px 0 2px 21px;position:relative;font-size:12px}
+.md ol li .onum{position:absolute;left:0;background:var(--accent);color:#000;width:14px;height:14px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:7.5px;font-weight:900;top:3px;font-family:var(--mono)}
+.md .tw{overflow-x:auto;margin:7px 0;border-radius:5px;border:1px solid var(--border)}
+.md table{width:100%;border-collapse:collapse;font-size:10.5px;min-width:260px}
+.md th{background:rgba(0,212,255,.1);color:var(--accent);font-weight:700;
+  font-family:var(--mono);font-size:9.5px;padding:5px 7px;border:1px solid var(--border);text-align:left}
+.md td{padding:5px 7px;border:1px solid var(--border);vertical-align:top}
+.md tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.md strong{font-weight:700;color:#fff}
+.md em{color:var(--accent);font-style:italic}
+
+@media(max-width:700px){
+  #sb{display:none}
+  #qbar{display:flex}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ API KEY OVERLAY ══════════════════════════════ -->
+<div id="api-overlay">
+  <div class="api-box">
+    <div class="api-title">🔑 API 키 설정</div>
+    <div class="api-sub">
+      Anthropic API 키를 입력하면 <strong>claude.ai 횟수와 완전히 분리</strong>되어 사용됩니다.<br>
+      키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다.
+    </div>
+    <div class="api-steps">
+      <div class="api-step">
+        <div class="step-n">1</div>
+        <div class="step-t"><a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a> 접속 후 회원가입</div>
+      </div>
+      <div class="api-step">
+        <div class="step-n">2</div>
+        <div class="step-t">좌측 메뉴 <span>API Keys</span> → <span>Create Key</span></div>
+      </div>
+      <div class="api-step">
+        <div class="step-n">3</div>
+        <div class="step-t">생성된 키(<span>sk-ant-...</span>) 복사 후 아래 입력</div>
+      </div>
+      <div class="api-step">
+        <div class="step-n">4</div>
+        <div class="step-t">첫 $5 크레딧 무료 제공 → 분석 1회당 약 <span>$0.002~0.005</span></div>
+      </div>
+    </div>
+    <div class="api-inp-wrap">
+      <input class="api-inp" id="api-inp" type="password"
+             placeholder="sk-ant-api03-..."
+             onkeydown="if(event.key==='Enter')saveKey()">
+      <button class="api-eye" onclick="toggleEye()" id="eyebtn">👁</button>
+    </div>
+    <button class="api-save" onclick="saveKey()">✅ 저장하고 시작하기</button>
+    <div class="api-warn">
+      ⚠️ <strong>API 키는 비밀번호입니다.</strong> 타인에게 공유하지 마세요.<br>
+      키는 이 브라우저 localStorage에만 저장됩니다.
+    </div>
+  </div>
+</div>
+
+<!-- ══ HEADER ══════════════════════════════════════ -->
+<div id="hdr">
+  <div class="logo">
+    <div class="logo-ico">📈</div>
+    <div>
+      <div class="logo-t">SWING MASTER AI</div>
+      <div class="logo-s">REAL-TIME · GS QUANT · 형님 전용</div>
+    </div>
+  </div>
+  <div class="hright">
+    <button class="key-btn" onclick="showKeyOverlay()" title="API 키 변경">🔑 키변경</button>
+    <span class="badge badge-live">● LIVE</span>
+    <span class="badge badge-gs">GS 20Y</span>
+  </div>
+</div>
+
+<div id="root">
+
+  <!-- SIDEBAR -->
+  <aside id="sb">
+    <div id="sb-body">
+      <div class="ss">
+        <div class="st">🎯 티커 스캔</div>
+        <div class="scan-row">
+          <input class="tin" id="tin" placeholder="TICKER 입력" maxlength="10"
+                 onkeydown="if(event.key==='Enter')doScan()">
+          <button class="gobtn" id="gobtn" onclick="doScan()">GO</button>
+        </div>
+        <div class="mrow">
+          <button class="mb on" id="m-full"  onclick="setMode('full')">풀리포트</button>
+          <button class="mb"   id="m-quick" onclick="setMode('quick')">빠른체크</button>
+          <button class="mb"   id="m-entry" onclick="setMode('entry')">진입타점</button>
+        </div>
+      </div>
+      <div class="ss">
+        <div class="st">📉 차트</div>
+        <div class="ct-row">
+          <span class="ct-l">종목</span>
+          <span class="ct-v" id="ctv">OKLO</span>
+          <button class="ctbtn" onclick="showTab('chart')">보기</button>
+        </div>
+        <div class="st" style="margin-bottom:5px">봉 선택</div>
+        <div class="irow" id="irow"></div>
+      </div>
+      <div class="ss">
+        <div class="st">⚡ 빠른 실행</div>
+        <div id="qalist"></div>
+      </div>
+      <div class="ss">
+        <div class="st">📌 관심 종목</div>
+        <div class="pg" id="pgrid"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="tabs">
+      <button class="tab" id="tab-chart" onclick="showTab('chart')">📉 차트 — <span id="tsym">OKLO</span></button>
+      <button class="tab on" id="tab-chat" onclick="showTab('chat')">💬 AI 분석</button>
+    </div>
+
+    <div id="chart-panel">
+      <div id="tv-wrap"></div>
+    </div>
+
+    <div id="chat-panel" class="show">
+      <div id="cbar">
+        <span id="cinfo">💬 새 대화</span>
+        <button class="clrbtn" onclick="clearChat()">초기화</button>
+      </div>
+      <div id="msgs">
+        <div class="empty" id="es">
+          <div class="ei">📊</div>
+          <div class="et">형님, 분석 시작할까요?</div>
+          <div class="ed">실시간 웹서치 · TradingView 차트<br>5대 이평선 무한 루프 룰 기반 분석</div>
+          <div class="pills">
+            <span class="pill">3분할 매수</span><span class="pill">무한 루프</span>
+            <span class="pill">손절 금지</span><span class="pill">사팔사팔</span><span class="pill">비중 관리</span>
+          </div>
+        </div>
+      </div>
+      <div id="ia">
+        <div id="ir">
+          <textarea id="inp" rows="1"
+            placeholder="종목·시장 분석, 매매 전략 등..."
+            onkeydown="handleKey(event)" oninput="autoH(this)"></textarea>
+          <button id="sndbtn" onclick="sendMsg()">↑</button>
+        </div>
+        <div id="ih">■ 실시간 웹서치 · 5대 이평선 무한 루프 · TradingView 차트 · 내부자 동향 통합</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile quick bar -->
+<div id="qbar"></div>
+
+<script>
+// ══ SYSTEM ══════════════════════════════════════════
+const SYS=`당신은 형님의 전담 시니어 퀀트 트레이더 겸 스윙 매매 전문가입니다.
+골드만삭스 자산운용 20년 경력. 반드시 web_search 도구로 최신 실시간 데이터를 검색한 후 답변하십시오.
+
+━━━ 형님의 5대 이평선 무한 루프 룰 ━━━
+■ 3분할 매수: 1차(1/3)=20일선 / 2차(1/3)=50일선 / 3차(1/3)=100일선
+  → 1종목 총자산 10% 이내 / 최대 5종목
+■ 하락 대응: 3분할 후 하락 → 무조건 홀딩. 200일선 지지 확인. 골든크로스 시 유동 대처. 월봉 이탈 시만 청산
+■ 익절&재진입: 목표가 50% 매도 → 데드크로스 직전 나머지 청산 → 20일선 눌림목 재진입 무한반복(사팔사팔)
+━━━ 종목 기준 ━━━
+- 월봉·주봉 상승추세(HH+HL 3접점+) 후만 진입 / 하락추세 하따 절대 금지
+- 시총 $1B+ / 주도 섹터 / 거래량 150%+ / 내부자 Code P 매수
+- CEO·CFO 동시 대규모 매도 = 🔴 적색 경보
+━━━ 출력 형식 (마크다운 표 필수) ━━━
+## ■ EXECUTIVE RATING BOX (BUY/HOLD/SELL/WATCH + 현재가/목표가/기대수익률/리스크/확신레벨)
+## ■ 현재 상태 보고 (5·20·50·100·200일선 실제수치·이격도 표)
+## ■ 무한 루프 액션 (현재 단계 + 3분할 타점$ + 목표가$ + 손절선$)
+## ■ 리스크 브리핑 (내부자/희석/악재/재무/ATR)
+## ■ 섹터 & 촉매
+## ■ 기술적 분석
+## ■ 시나리오 (🟢강세 vs 🔴약세)
+## ■ 한줄평
+반드시 web_search 사용. 이평선은 검색된 실제값만. 냉철한 월스트리트 톤.`;
+
+const QA=[
+  {i:"📊",l:"시장 전체 분석",p:"지금 미국 주식 시장 전체를 실시간 서치해서 분석. S&P500·Nasdaq·Russell2000 위치, 주도 섹터 Top3, VIX, 금리, 달러, 스윙 환경 점수(1-10) 보고."},
+  {i:"🔥",l:"VRT 분석",p:"VRT (Vertiv Holdings) 풀 분석. 실시간 서치로 현재가·이평선 실제수치, 내부자, 전력/AI 섹터, 무한 루프 단계, 3분할 타점($) 전체 보고서."},
+  {i:"⚡",l:"VST 분석",p:"VST (Vistra Energy) 풀 분석. 원전·전력 섹터, 무한 루프 단계, 3분할 타점($), 목표가($), 손절선($) 실시간 서치."},
+  {i:"☢️",l:"OKLO 분석",p:"OKLO 풀 분석. 실시간 서치로 현재가·이평선 실제수치, 내부자 Form4, 우주원전 카탈리스트, 어닝날짜, 무한 루프 단계, 3분할 타점($) 보고."},
+  {i:"💡",l:"주도 종목 발굴",p:"지금 미국 시장 수급 강한 주도 섹터 Top3 실시간 서치. 형님 스윙 원칙 부합 종목 2-3개씩 추천. 현재가·20일선 위치 포함."},
+  {i:"🔍",l:"내부자 동향",p:"최근 2주 미국 주식 CEO·CFO급 내부자 장내 매수(Code P) $100만+ 포착 종목 실시간 서치. 섹터 수급 긍정+상승추세 부합 우선 보고."},
+  {i:"📉",l:"리스크 점검",p:"지금 미국 시장 주요 리스크 실시간 서치. 금리·달러·VIX·어닝·지정학 종합. 스윙 트레이더 관점 이번 주 주의 포인트 3가지."},
+  {i:"🔄",l:"섹터 로테이션",p:"현재 미국 주식 섹터 로테이션 현황 실시간 서치. 자금 유입 vs 유출 섹터, 추세 전환 감지, 머니쇼어링 관점 분석."},
+];
+const PRESETS=["VRT","VST","WMT","NVDA","PLTR","TSLA","OKLO","IONQ","NNE","JOBY","MSTR","RGTI","SMR","CEG","AXON"];
+const IVLS=[{k:"1",l:"1분"},{k:"5",l:"5분"},{k:"15",l:"15분"},{k:"60",l:"1H"},{k:"D",l:"일봉"},{k:"W",l:"주봉"},{k:"M",l:"월봉"}];
+
+let hist=[],loading=false,mode='full',csym='OKLO',cint='D',cvBuilt=false;
+let API_KEY='';
+
+// ══ API KEY ══════════════════════════════════════
+function loadKey(){
+  try{ API_KEY=localStorage.getItem('smai_key')||''; }catch(e){ API_KEY=''; }
+  if(API_KEY && API_KEY.startsWith('sk-ant')){
+    document.getElementById('api-overlay').classList.add('hide');
+  }
+}
+function saveKey(){
+  const v=document.getElementById('api-inp').value.trim();
+  if(!v){ alert('API 키를 입력해주세요.'); return; }
+  if(!v.startsWith('sk-ant')){ alert('올바른 Anthropic API 키 형식이 아닙니다.\nsk-ant- 로 시작해야 합니다.'); return; }
+  API_KEY=v;
+  try{ localStorage.setItem('smai_key',v); }catch(e){}
+  document.getElementById('api-overlay').classList.add('hide');
+}
+function showKeyOverlay(){
+  document.getElementById('api-inp').value=API_KEY||'';
+  document.getElementById('api-overlay').classList.remove('hide');
+}
+function toggleEye(){
+  const inp=document.getElementById('api-inp');
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+// ══ INIT ═════════════════════════════════════════
+loadKey();
+(function(){
+  // Desktop quick actions
+  const ql=document.getElementById('qalist');
+  QA.forEach((q,i)=>{
+    const b=document.createElement('button');b.className='qb';b.id='qa'+i;
+    b.innerHTML=q.i+' '+q.l;b.onclick=()=>{showTab('chat');go(q.p);};ql.appendChild(b);
+  });
+  // Intervals
+  const ir=document.getElementById('irow');
+  IVLS.forEach(({k,l})=>{
+    const b=document.createElement('button');
+    b.className='ib'+(k==='D'?' on':'');b.textContent=l;
+    b.onclick=()=>{cint=k;ir.querySelectorAll('.ib').forEach(x=>x.classList.remove('on'));b.classList.add('on');buildTV(csym,k);showTab('chart');};
+    ir.appendChild(b);
+  });
+  // Presets
+  const pg=document.getElementById('pgrid');
+  PRESETS.forEach(t=>{
+    const b=document.createElement('button');b.className='pb';b.textContent=t;
+    b.onclick=()=>{document.getElementById('tin').value=t;setSym(t);};pg.appendChild(b);
+  });
+  // Mobile quick bar
+  const qbar=document.getElementById('qbar');
+  ['OKLO','VRT','VST','NVDA','IONQ','NNE','PLTR','MSTR'].forEach(t=>{
+    const c=document.createElement('button');c.className='qchip hot';c.textContent=t;
+    c.onclick=()=>{setSym(t);showTab('chat');go(`${t} 빠른 체크. 현재가, 20일선 대비 이격도, 무한 루프 단계(매수대기/1차/2차/3차/홀딩/익절), 오늘 주목 포인트. 실시간 서치.`);};
+    qbar.appendChild(c);
+  });
+  QA.slice(0,5).forEach(q=>{
+    const c=document.createElement('button');c.className='qchip';
+    c.textContent=q.i+' '+q.l;c.onclick=()=>{showTab('chat');go(q.p);};qbar.appendChild(c);
+  });
+})();
+
+// ══ UI ═══════════════════════════════════════════
+function showTab(t){
+  const isC=t==='chart';
+  document.getElementById('chart-panel').classList.toggle('show',isC);
+  document.getElementById('chat-panel').classList.toggle('show',!isC);
+  document.getElementById('tab-chart').classList.toggle('on',isC);
+  document.getElementById('tab-chat').classList.toggle('on',!isC);
+  if(isC&&!cvBuilt)buildTV(csym,cint);
+}
+function setMode(m){
+  mode=m;['full','quick','entry'].forEach(x=>document.getElementById('m-'+x).classList.toggle('on',x===m));
+}
+function setSym(s){
+  csym=s;document.getElementById('ctv').textContent=s;document.getElementById('tsym').textContent=s;
+  if(cvBuilt)buildTV(s,cint);
+}
+function setDis(v){
+  loading=v;
+  document.getElementById('sndbtn').disabled=v;
+  const gb=document.getElementById('gobtn');if(gb)gb.disabled=v;
+  document.querySelectorAll('.qb,.qchip').forEach(b=>b.disabled=v);
+}
+function updInfo(){
+  const n=Math.ceil(hist.length/2);
+  document.getElementById('cinfo').textContent=loading?'🔄 분석 중...':n>0?`💬 ${n}건 분석`:'💬 새 대화';
+}
+function autoH(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,90)+'px';}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function clearChat(){
+  hist=[];const m=document.getElementById('msgs');m.innerHTML='';
+  const es=document.createElement('div');es.className='empty';es.id='es';
+  es.innerHTML='<div class="ei">📊</div><div class="et">형님, 분석 시작할까요?</div><div class="ed">실시간 웹서치 · TradingView 차트<br>5대 이평선 무한 루프 룰 기반 분석</div><div class="pills"><span class="pill">3분할 매수</span><span class="pill">무한 루프</span><span class="pill">손절 금지</span><span class="pill">사팔사팔</span><span class="pill">비중 관리</span></div>';
+  m.appendChild(es);updInfo();
+}
+function doScan(){
+  const t=(document.getElementById('tin').value.trim()||csym).toUpperCase();
+  if(!t)return;setSym(t);document.getElementById('tin').value='';
+  const ps={
+    full:`${t} 풀 분석. 실시간 서치로 현재가·이평선(5·20·50·100·200일) 실제수치·이격도, 내부자 Form4, 섹터 수급, 어닝날짜, 무한 루프 현재 단계와 3분할 타점($) 명시. 전체 보고서.`,
+    quick:`${t} 빠른 체크. 현재가, 20일선 대비 이격도, 무한 루프 단계(매수대기/1차/2차/3차/홀딩/익절), 오늘 주목 포인트 1가지. 실시간 서치.`,
+    entry:`${t} 진입 타점. 지금 들어가도 되는지 판단. 20·50·100일선 실제 위치, 3분할 진입 가격($), 손절선($), 목표가($). 실시간 서치.`
+  };
+  showTab('chat');go(ps[mode]);
+}
+
+// ══ CHART ════════════════════════════════════════
+function buildTV(sym,intv){
+  const wrap=document.getElementById('tv-wrap');wrap.innerHTML='';
+  const id='tv_'+Date.now();
+  const div=document.createElement('div');div.id=id;div.style.cssText='width:100%;height:100%';
+  wrap.appendChild(div);
+  const s=document.createElement('script');
+  s.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  s.async=true;
+  s.innerHTML=JSON.stringify({
+    autosize:true,symbol:sym,interval:intv||'D',timezone:'Asia/Seoul',
+    theme:'dark',style:'1',locale:'kr',
+    backgroundColor:'rgba(6,9,18,1)',gridColor:'rgba(26,36,68,0.4)',
+    hide_top_toolbar:false,hide_legend:false,save_image:true,withdateranges:true,
+    studies:['STD;MA%Cross','STD;MACD','STD;RSI','STD;Volume','STD;Ichimoku%20Cloud'],
+    container_id:id
+  });
+  div.appendChild(s);cvBuilt=true;
+}
+
+// ══ API CALL ═════════════════════════════════════
+async function callAPI(msg){
+  if(!API_KEY){
+    showKeyOverlay();
+    throw new Error('API 키를 먼저 입력해주세요.');
+  }
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:16000,system:SYS,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[...hist,{role:'user',content:msg}]
+    })
+  });
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+  return(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n')||'응답 없음';
+}
+
+// ══ SEND ═════════════════════════════════════════
+function sendMsg(){go();}
+async function go(txt){
+  const text=(txt||document.getElementById('inp').value).trim();
+  if(!text||loading)return;
+  document.getElementById('inp').value='';document.getElementById('inp').style.height='auto';
+  const es=document.getElementById('es');if(es)es.remove();
+  const m=document.getElementById('msgs');
+  const uw=document.createElement('div');uw.className='msg';
+  uw.innerHTML=`<div class="mu"><div class="bu">${esc(text)}</div></div>`;
+  m.appendChild(uw);s2e();
+  hist.push({role:'user',content:text});
+  setDis(true);updInfo();
+  const lw=document.createElement('div');lw.className='msg';
+  lw.innerHTML='<div class="ma"><div class="av">📈</div><div class="ldots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';
+  m.appendChild(lw);s2e();
+  try{
+    const rep=await callAPI(text);lw.remove();
+    const aw=document.createElement('div');aw.className='msg';
+    aw.innerHTML=`<div class="ma"><div class="av">📈</div><div class="ba md">${mdown(rep)}</div></div>`;
+    m.appendChild(aw);s2e();
+    hist.push({role:'assistant',content:rep});
+  }catch(e){
+    lw.remove();
+    const ew=document.createElement('div');ew.className='msg';
+    ew.innerHTML=`<div class="ma"><div class="av" style="background:#ff4455">⚠️</div><div class="ba" style="color:#ff8888">오류: ${esc(e.message)}</div></div>`;
+    m.appendChild(ew);
+  }
+  setDis(false);updInfo();
+}
+function s2e(){const m=document.getElementById('msgs');setTimeout(()=>m.scrollTop=m.scrollHeight,60);}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
+
+// ══ MARKDOWN ═════════════════════════════════════
+function mdown(text){
+  let s=text
+    .replace(/```[\w]*\n?([\s\S]*?)```/g,'<pre><code>$1</code></pre>')
+    .replace(/`([^`\n]+)`/g,'<code>$1</code>')
+    .replace(/^#### (.+)$/gm,'<h4>$1</h4>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^---+$/gm,'<hr>')
+    .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>');
+  s=s.replace(/((?:\|[^\n]+\|\n?)+)/g,chunk=>{
+    const lines=chunk.trim().split('\n').filter(l=>l.trim());
+    if(lines.length<2)return chunk;
+    let h='<div class="tw"><table>';
+    lines.forEach((line,i)=>{
+      if(/^\|[\s\-:|]+\|$/.test(line.trim()))return;
+      const cells=line.split('|').slice(1,-1);
+      const tag=i===0?'th':'td';
+      h+='<tr>'+cells.map(c=>`<${tag}>${c.trim().replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</${tag}>`).join('')+'</tr>';
+    });
+    return h+'</table></div>';
+  });
+  s=s.replace(/^- (.+)$/gm,'<li>$1</li>');
+  s=s.replace(/(<li>(?:[^<]|<(?!\/li>))*<\/li>\n?)+/g,m=>`<ul>${m}</ul>`);
+  s=s.replace(/^(\d+)\. (.+)$/gm,(_,n,t)=>`<li><span class="onum">${n}</span>${t}</li>`);
+  s=s.replace(/(<li><span class="onum"[\s\S]*?<\/li>\n?)+/g,m=>`<ol>${m}</ol>`);
+  s=s.replace(/\n\n+/g,'</p><p>').replace(/([^>])\n([^<])/g,'$1<br>$2');
+  if(!/^</.test(s.trim()))s='<p>'+s+'</p>';
+  return s;
+}
+</script>
+</body>
+</html>
